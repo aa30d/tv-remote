@@ -79,7 +79,7 @@ git push origin v2.0.0
 ## مجوز
 
 - کد این برنامه به‌دلیل استفاده از کدهای اقتباس‌شده از [IRRemote](#منابع-و-اعتبارات) تحت **مجوز GNU GPL نسخهٔ ۳** منتشر می‌شود (فایل `LICENSE`).
-- فونت **وزیرمتن** تحت **مجوز SIL Open Font License 1.1** است (فایل `app/src/main/res/font/OFL.txt`).
+- فونت **وزیرمتن** تحت **مجوز SIL Open Font License 1.1** است (فایل `licenses/OFL-Vazirmatn.txt`).
 
 ## منابع و اعتبارات
 
