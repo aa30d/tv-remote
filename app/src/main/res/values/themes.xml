@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SmartRemote" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/header_primary</item>
+        <item name="colorPrimaryVariant">@color/nav_bar_dark</item>
+        <item name="colorSecondary">@color/accent_cyan</item>
+        <item name="android:statusBarColor">@color/header_primary</item>
+        <item name="android:navigationBarColor">@color/nav_bar_dark</item>
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+
+    <style name="Theme.SmartRemote.BottomSheetDialog" parent="Theme.MaterialComponents.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/SmartRemoteBottomSheet</item>
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+
+    <style name="SmartRemoteBottomSheet" parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@android:color/transparent</item>
+    </style>
+</resources>
