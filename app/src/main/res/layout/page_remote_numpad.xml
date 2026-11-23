@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:layoutDirection="ltr"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="4dp">
+
+    <!-- Row 1: 1, 2, 3, CH+ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <TextView android:id="@+id/key1" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="1" android:textColor="@color/white" android:textSize="24sp" />
+        <TextView android:id="@+id/key2" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="2" android:textColor="@color/white" android:textSize="24sp" />
+        <TextView android:id="@+id/key3" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="3" android:textColor="@color/white" android:textSize="24sp" />
+        <ImageButton android:id="@+id/keyChUp" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:contentDescription="کانال بعد" android:padding="13dp" android:scaleType="fitCenter" android:src="@drawable/ic_chevron_up" />
+    </LinearLayout>
+
+    <!-- Row 2: 4, 5, 6, CH- -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <TextView android:id="@+id/key4" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="4" android:textColor="@color/white" android:textSize="24sp" />
+        <TextView android:id="@+id/key5" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="5" android:textColor="@color/white" android:textSize="24sp" />
+        <TextView android:id="@+id/key6" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="6" android:textColor="@color/white" android:textSize="24sp" />
+        <ImageButton android:id="@+id/keyChDown" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:contentDescription="کانال قبل" android:padding="13dp" android:scaleType="fitCenter" android:src="@drawable/ic_chevron_down" />
+    </LinearLayout>
+
+    <!-- Row 3: 7, 8, 9, List -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <TextView android:id="@+id/key7" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="7" android:textColor="@color/white" android:textSize="24sp" />
+        <TextView android:id="@+id/key8" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="8" android:textColor="@color/white" android:textSize="24sp" />
+        <TextView android:id="@+id/key9" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="9" android:textColor="@color/white" android:textSize="24sp" />
+        <ImageButton android:id="@+id/keyList" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:contentDescription="لیست" android:padding="15dp" android:scaleType="fitCenter" android:src="@drawable/ic_list" />
+    </LinearLayout>
+
+    <!-- Row 4: Back, 0, Home, Settings -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <ImageButton android:id="@+id/keyBack" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:contentDescription="بازگشت" android:padding="15dp" android:scaleType="fitCenter" android:src="@drawable/ic_backspace" />
+        <TextView android:id="@+id/key0" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:gravity="center" android:text="0" android:textColor="@color/white" android:textSize="24sp" />
+        <ImageButton android:id="@+id/keyHome" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:contentDescription="خانه" android:padding="15dp" android:scaleType="fitCenter" android:src="@drawable/ic_home" />
+        <ImageButton android:id="@+id/keySettings" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_remote_key" android:contentDescription="تنظیمات" android:padding="15dp" android:scaleType="fitCenter" android:src="@drawable/ic_settings" />
+    </LinearLayout>
+
+</LinearLayout>

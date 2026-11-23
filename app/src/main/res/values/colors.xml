@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_primary">#1A4A6E</color>
+    <color name="header_primary">#1C5582</color>
+    <color name="panel_blue">#23789E</color>
+    <color name="nav_bar_dark">#134763</color>
+    <color name="nav_bar_border">#801E6383</color>
+    <color name="accent_cyan">#00B0F0</color>
+    <color name="accent_cyan_dark">#0284C7</color>
+    <color name="telewebion_red">#E3000F</color>
+    <color name="telewebion_red_dark">#B91C1C</color>
+    <color name="satellite_blue">#0088CC</color>
+    <color name="btn_gray_bg">#E5E7EB</color>
+    <color name="btn_gray_pressed">#D1D5DB</color>
+    <color name="text_dark">#1F2937</color>
+    <color name="text_muted">#6B7280</color>
+    <color name="card_divider">#F3F4F6</color>
+    <color name="sheet_header_bg">#F3F4F6</color>
+    <color name="sheet_footer_bg">#F9FAFB</color>
+    <color name="border_gray">#D1D5DB</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="toast_bg">#E6111827</color>
+</resources>

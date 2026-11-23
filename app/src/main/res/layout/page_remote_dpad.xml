@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:layoutDirection="ltr"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Up -->
+    <ImageButton
+        android:id="@+id/dpadUp"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/bg_dpad_circle"
+        android:contentDescription="بالا"
+        android:padding="13dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_chevron_up" />
+
+    <!-- Middle Row: Left, OK, Right -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/dpadLeft"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/bg_dpad_circle"
+            android:contentDescription="چپ"
+            android:padding="13dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_chevron_left" />
+
+        <TextView
+            android:id="@+id/dpadOk"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@drawable/bg_dpad_ok"
+            android:gravity="center"
+            android:text="OK"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/dpadRight"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_dpad_circle"
+            android:contentDescription="راست"
+            android:padding="13dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_chevron_right" />
+    </LinearLayout>
+
+    <!-- Down -->
+    <ImageButton
+        android:id="@+id/dpadDown"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_dpad_circle"
+        android:contentDescription="پایین"
+        android:padding="13dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_chevron_down" />
+
+</LinearLayout>
