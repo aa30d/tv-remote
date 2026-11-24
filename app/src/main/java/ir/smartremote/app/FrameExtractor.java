@@ -122,7 +122,10 @@ public class FrameExtractor {
                 mediaPlaylistUrl = second.finalUrl;
             }
 
-            String segmentUrl = pickFirstSegment(mediaPlaylistText, mediaPlaylistUrl);
+            // Live DVR playlists are ordered oldest-to-newest. The first listed
+            // segment can be about an hour old; capture from the newest complete
+            // segment at the end of the playlist instead.
+            String segmentUrl = pickLatestSegment(mediaPlaylistText, mediaPlaylistUrl);
             if (segmentUrl == null) return false;
 
             tmpSeg = File.createTempFile("seg_" + uid + "_", ".ts", context.getCacheDir());
@@ -205,15 +208,18 @@ public class FrameExtractor {
         return bestUrl;
     }
 
-    private String pickFirstSegment(String playlist, String baseUrl) throws Exception {
-        String[] lines = playlist.split("\r?\n");
+    private String pickLatestSegment(String playlist, String baseUrl) throws Exception {
+        String[] lines = playlist.split("\\r?\\n");
         URL base = new URL(baseUrl);
+        String latestSegmentUrl = null;
         for (String line : lines) {
             String t = line.trim();
             if (t.isEmpty() || t.startsWith("#")) continue;
-            return new URL(base, t).toString();
+            // Media playlist entries are chronological; retain the last complete
+            // segment rather than the oldest entry in a DVR/time-shift window.
+            latestSegmentUrl = new URL(base, t).toString();
         }
-        return null;
+        return latestSegmentUrl;
     }
 
     private PlaylistFetch fetchPlaylist(String url, String referer) {
