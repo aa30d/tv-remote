@@ -54,7 +54,7 @@ public class FrameExtractor {
         cancelled.set(true);
     }
 
-    public void extractAll(List<ChannelItem> channels, Listener listener) {
+    public void extractAll(List<ChannelItem> channels, String preferredSource, Listener listener) {
         cancelled.set(false);
         final int total = channels != null ? channels.size() : 0;
         if (total == 0) {
@@ -70,7 +70,7 @@ public class FrameExtractor {
                 if (cancelled.get()) return;
                 boolean ok = false;
                 try {
-                    ok = captureChannelFrame(ch);
+                    ok = captureChannelFrame(ch, preferredSource);
                     if (ok) succeeded.incrementAndGet();
                 } catch (Exception e) {
                     Log.w(TAG, "Frame capture failed for " + ch.uid + ": " + e.getMessage());
@@ -86,10 +86,11 @@ public class FrameExtractor {
         }
     }
 
-    private boolean captureChannelFrame(ChannelItem ch) {
-        // Prefer Telewebion (always has multi-quality adaptive master m3u8 including lowest 240p/360p)
-        // and fall back to Sepehr stream (or vice versa)
-        String[] candidates = new String[]{ch.getTelewebionStreamUrl(), ch.sepehrStreamUrl};
+    private boolean captureChannelFrame(ChannelItem ch, String preferredSource) {
+        // Use exactly the source selected by the user.
+        String[] candidates = "sepehr".equals(preferredSource)
+                ? new String[]{ch.sepehrStreamUrl}
+                : new String[]{ch.getTelewebionStreamUrl()};
         for (String m3u8Url : candidates) {
             if (cancelled.get()) return false;
             if (m3u8Url == null || m3u8Url.trim().isEmpty()) continue;

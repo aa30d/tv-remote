@@ -1,9 +1,11 @@
 package ir.smartremote.app;
 
 import android.app.Activity;
+import android.app.UiModeManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -78,6 +80,8 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
     private static final String PREFS_NAME = "smart_remote_native_prefs";
     private static final String KEY_CHANNEL_CODES = "channel_codes_json";
     private static final String KEY_DEFAULT_QUALITY = "default_stream_quality";
+    private static final String KEY_TV_FOCUS_MODE = "tv_focus_mode"; // auto | on | off
+    private static final String KEY_FRAME_SOURCE = "frame_source"; // telewebion | sepehr
 
     public static final String QUALITY_ADAPTIVE = "adaptive";
     public static final String QUALITY_HIGHEST = "highest";
@@ -100,6 +104,19 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
     private boolean isRefreshing = false;
     private boolean isCapturingFrames = false;
     private String frameProgressText = null;
+    private String frameSource = "telewebion";
+
+    // Header UI (buttons moved from the old RecyclerView header item)
+    private TextView btnRefresh;
+    private TextView btnCaptureFrames;
+    private TextView btnEditCodes;
+    private TextView btnSelectTvModel;
+    private TextView btnDefaultQuality;
+    private View btnHeaderSettings;
+    private View headerOptionsContainer;
+    private CheckBox chkTvFocus;
+    private TextView btnFrameSourceTelewebion;
+    private TextView btnFrameSourceSepehr;
 
     // Player UI & ExoPlayer state
     private FrameLayout stickyPlayerSlot;
@@ -208,6 +225,7 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
 
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         defaultQualityMode = prefs.getString(KEY_DEFAULT_QUALITY, QUALITY_ADAPTIVE);
+        frameSource = prefs.getString(KEY_FRAME_SOURCE, "telewebion");
         loadSavedCodes();
 
         irManager = new IrManager(this);
@@ -216,10 +234,12 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         frameExtractor = new FrameExtractor(this, imageCache);
 
         bindViews();
+        setupHeaderButtons();
         setupIrCallbacks();
         setupRemoteOverlay();
         setupPlayer();
         setupChannelsGrid();
+        applyTvFocusMode();
 
         // Load cached/seed channels immediately, then refresh live EPG in background
         String cachedJson = sepehrApi.getCachedOrSeedChannelsJson();
@@ -232,15 +252,28 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         refreshChannelsFromApi(false, true);
 
         // TV (D-Pad): start with focus inside the channels grid so arrow keys
-        // navigate immediately without any touch. Header buttons are item 0 of
-        // the same RecyclerView, so they are reachable with the arrows too.
-        getWindow().getDecorView().post(() -> {
-            View rv = findViewById(R.id.channelsRecycler);
-            if (rv != null) rv.requestFocus();
-        });
+        // navigate immediately without any touch. Header buttons are above the
+        // grid in the AppBar and reachable with the arrows too.
+        if (resolveTvFocusEnabled()) {
+            getWindow().getDecorView().post(() -> {
+                View rv = findViewById(R.id.channelsRecycler);
+                if (rv != null) rv.requestFocus();
+            });
+        }
     }
 
     private void bindViews() {
+        btnRefresh = findViewById(R.id.btnRefresh);
+        btnCaptureFrames = findViewById(R.id.btnCaptureFrames);
+        btnEditCodes = findViewById(R.id.btnEditCodes);
+        btnSelectTvModel = findViewById(R.id.btnSelectTvModel);
+        btnDefaultQuality = findViewById(R.id.btnDefaultQuality);
+        btnHeaderSettings = findViewById(R.id.btnHeaderSettings);
+        headerOptionsContainer = findViewById(R.id.headerOptionsContainer);
+        chkTvFocus = findViewById(R.id.chkTvFocus);
+        btnFrameSourceTelewebion = findViewById(R.id.btnFrameSourceTelewebion);
+        btnFrameSourceSepehr = findViewById(R.id.btnFrameSourceSepehr);
+
         stickyPlayerSlot = findViewById(R.id.stickyPlayerSlot);
         playerAspectBox = findViewById(R.id.playerAspectBox);
         fullscreenContainer = findViewById(R.id.fullscreenContainer);
@@ -278,6 +311,125 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
                 }
             }
         });
+    }
+
+    private void setupHeaderButtons() {
+        btnRefresh.setOnClickListener(v -> onRefreshClicked());
+        btnCaptureFrames.setOnClickListener(v -> onCaptureFramesClicked());
+        btnEditCodes.setOnClickListener(v -> onEditCodesClicked());
+        btnSelectTvModel.setOnClickListener(v -> onSelectTvModelClicked());
+        btnDefaultQuality.setOnClickListener(v -> onDefaultQualityClicked());
+        btnHeaderSettings.setOnClickListener(v -> toggleHeaderOptions());
+        chkTvFocus.setOnCheckedChangeListener((buttonView, isChecked) ->
+                setTvFocusMode(isChecked ? "on" : "off"));
+        btnFrameSourceTelewebion.setOnClickListener(v -> setFrameSource("telewebion"));
+        btnFrameSourceSepehr.setOnClickListener(v -> setFrameSource("sepehr"));
+    }
+
+    private void toggleHeaderOptions() {
+        boolean show = headerOptionsContainer.getVisibility() != View.VISIBLE;
+        headerOptionsContainer.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show && resolveTvFocusEnabled()) {
+            btnEditCodes.requestFocus();
+        }
+    }
+
+    private void configureDialogFocus(View view) {
+        if (!resolveTvFocusEnabled()) clearFocusRings(view);
+    }
+
+    static void clearFocusRings(View view) {
+        if (view.getId() == R.id.dialArea) {
+            // Keep its selectable foreground ripple; only remove the TV ring background.
+            view.setBackgroundResource(android.R.color.transparent);
+        } else if (view.isFocusable()) {
+            view.setForeground(null);
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                clearFocusRings(group.getChildAt(i));
+            }
+        }
+    }
+
+    // ==================== TV FOCUS MODE (D-PAD) ====================
+    // Focus ring + D-Pad navigation are only for TV. Auto-detected via
+    // leanback feature / TV UI mode; the header checkbox overrides it.
+    // When off, focus is blocked on the whole activity root (touch and
+    // dialogs/keyboard are unaffected), so no focus ring ever shows.
+
+    private boolean isTvDevice() {
+        try {
+            if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK)) return true;
+        } catch (Exception ignored) {
+        }
+        try {
+            UiModeManager uiMode = (UiModeManager) getSystemService(UI_MODE_SERVICE);
+            if (uiMode != null && uiMode.getCurrentModeType() == UiModeManager.MODE_TYPE_TELEVISION) {
+                return true;
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    private boolean resolveTvFocusEnabled() {
+        if (!isTvDevice()) return false;
+        String mode = prefs.getString(KEY_TV_FOCUS_MODE, "auto");
+        if ("on".equals(mode)) return true;
+        if ("off".equals(mode)) return false;
+        return true;
+    }
+
+    private void applyTvFocusMode() {
+        boolean enabled = resolveTvFocusEnabled();
+        View root = findViewById(R.id.rootContainer);
+        if (root instanceof ViewGroup) {
+            ((ViewGroup) root).setDescendantFocusability(enabled
+                    ? ViewGroup.FOCUS_AFTER_DESCENDANTS
+                    : ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+            // On phones, remove TV-specific focus decorations as well as blocking
+            // D-Pad focus; preserve normal touch feedback where possible.
+            if (!isTvDevice()) clearFocusRings(root);
+        }
+        if (!enabled && getCurrentFocus() != null) {
+            getCurrentFocus().clearFocus();
+        }
+        syncTvFocusToggle();
+    }
+
+    private void setTvFocusMode(String mode) {
+        prefs.edit().putString(KEY_TV_FOCUS_MODE, mode).apply();
+        applyTvFocusMode();
+    }
+
+    private void syncTvFocusToggle() {
+        if (chkTvFocus == null) return;
+        // Detection is available on Android TV; keep the override off phones.
+        chkTvFocus.setVisibility(isTvDevice() ? View.VISIBLE : View.GONE);
+        boolean enabled = resolveTvFocusEnabled();
+        if (chkTvFocus.isChecked() != enabled) {
+            chkTvFocus.setChecked(enabled);
+        }
+    }
+
+    // ==================== FRAME CAPTURE SOURCE ====================
+
+    private void setFrameSource(String source) {
+        frameSource = source;
+        prefs.edit().putString(KEY_FRAME_SOURCE, source).apply();
+        syncFrameSourceButtons();
+        showToast("منبع عکس اولین فریم: " + ("sepehr".equals(source) ? "سپهر" : "تلوبیون"), true);
+    }
+
+    private void syncFrameSourceButtons() {
+        if (btnFrameSourceTelewebion == null || btnFrameSourceSepehr == null) return;
+        boolean tele = !"sepehr".equals(frameSource);
+        btnFrameSourceTelewebion.setBackgroundResource(tele ? R.drawable.bg_sheet_btn_cyan : R.drawable.bg_sheet_btn_white);
+        btnFrameSourceTelewebion.setTextColor(tele ? 0xFFFFFFFF : 0xFF1F2937);
+        btnFrameSourceSepehr.setBackgroundResource(!tele ? R.drawable.bg_sheet_btn_cyan : R.drawable.bg_sheet_btn_white);
+        btnFrameSourceSepehr.setTextColor(!tele ? 0xFFFFFFFF : 0xFF1F2937);
     }
 
     private void setupIrCallbacks() {
@@ -342,15 +494,8 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
 
     private void setupChannelsGrid() {
         RecyclerView rv = findViewById(R.id.channelsRecycler);
-        channelAdapter = new ChannelAdapter(imageCache, this);
-        GridLayoutManager glm = new GridLayoutManager(this, 2);
-        glm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
-            @Override
-            public int getSpanSize(int position) {
-                return position == 0 ? 2 : 1;
-            }
-        });
-        rv.setLayoutManager(glm);
+        channelAdapter = new ChannelAdapter(imageCache, this, isTvDevice());
+        rv.setLayoutManager(new GridLayoutManager(this, 2));
         rv.setAdapter(channelAdapter);
         rv.setItemAnimator(null);
     }
@@ -725,6 +870,7 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
     private void openLiveQualitySheet() {
         BottomSheetDialog dialog = new BottomSheetDialog(this, R.style.Theme_SmartRemote_BottomSheetDialog);
         View view = LayoutInflater.from(this).inflate(R.layout.sheet_quality, null);
+        configureDialogFocus(view);
         dialog.setContentView(view);
 
         TextView title = view.findViewById(R.id.txtQualitySheetTitle);
@@ -791,6 +937,7 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
     private void openDefaultQualitySheet() {
         BottomSheetDialog dialog = new BottomSheetDialog(this, R.style.Theme_SmartRemote_BottomSheetDialog);
         View view = LayoutInflater.from(this).inflate(R.layout.sheet_quality, null);
+        configureDialogFocus(view);
         dialog.setContentView(view);
 
         TextView title = view.findViewById(R.id.txtQualitySheetTitle);
@@ -839,6 +986,7 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
 
     private void addQualityOptionRow(LinearLayout parent, String label, String sub, boolean selected, Runnable onClick) {
         View row = LayoutInflater.from(this).inflate(R.layout.item_quality_option, parent, false);
+        configureDialogFocus(row);
         TextView txtLabel = row.findViewById(R.id.txtQualityLabel);
         TextView txtSub = row.findViewById(R.id.txtQualitySub);
         ImageView check = row.findViewById(R.id.imgQualityCheck);
@@ -856,15 +1004,13 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         parent.addView(row);
     }
 
-    // ==================== CHANNEL ADAPTER CALLBACKS ====================
+    // ==================== HEADER BUTTON ACTIONS ====================
 
-    @Override
-    public void onRefreshClicked() {
+    private void onRefreshClicked() {
         refreshChannelsFromApi(false, false);
     }
 
-    @Override
-    public void onCaptureFramesClicked() {
+    private void onCaptureFramesClicked() {
         if (isCapturingFrames) {
             showToast("دریافت عکس‌ها در حال انجام است...", true);
             return;
@@ -873,17 +1019,22 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
 
         isCapturingFrames = true;
         frameProgressText = "در حال دریافت فریم (0/" + channels.size() + ")...";
+        // Not-yet-updated images are dimmed until their frame arrives.
+        List<String> pending = new ArrayList<>();
+        for (ChannelItem ch : channels) pending.add(ch.uid);
+        channelAdapter.setPendingUids(pending);
         syncHeaderState();
-        showToast("در حال دریافت اولین فریم با پایین‌ترین کیفیت...", true);
+        String sourceName = "sepehr".equals(frameSource) ? "سپهر" : "تلوبیون";
+        showToast("در حال دریافت اولین فریم از " + sourceName + " با پایین‌ترین کیفیت...", true);
 
-        frameExtractor.extractAll(new ArrayList<>(channels), new FrameExtractor.Listener() {
+        frameExtractor.extractAll(new ArrayList<>(channels), frameSource, new FrameExtractor.Listener() {
             @Override
             public void onProgress(String uid, int completed, int total, boolean success) {
                 mainHandler.post(() -> {
                     frameProgressText = "در حال دریافت فریم (" + completed + "/" + total + ")...";
                     syncHeaderState();
                     if (success) {
-                        channelAdapter.notifyChannelUpdated(uid);
+                        channelAdapter.markUpdated(uid);
                     }
                 });
             }
@@ -893,6 +1044,7 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
                 mainHandler.post(() -> {
                     isCapturingFrames = false;
                     frameProgressText = null;
+                    channelAdapter.clearPending();
                     syncHeaderState();
                     if (succeeded > 0) {
                         showToast("عکس " + succeeded + " از " + total + " شبکه در حافظه ذخیره شد", true);
@@ -904,18 +1056,15 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         });
     }
 
-    @Override
-    public void onEditCodesClicked() {
+    private void onEditCodesClicked() {
         openEditCodesSheet();
     }
 
-    @Override
-    public void onSelectTvModelClicked() {
+    private void onSelectTvModelClicked() {
         openTvModelSheet();
     }
 
-    @Override
-    public void onDefaultQualityClicked() {
+    private void onDefaultQualityClicked() {
         openDefaultQualitySheet();
     }
 
@@ -986,6 +1135,7 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
     private void openEditCodesSheet() {
         BottomSheetDialog dialog = new BottomSheetDialog(this, R.style.Theme_SmartRemote_BottomSheetDialog);
         View view = LayoutInflater.from(this).inflate(R.layout.sheet_edit_codes, null);
+        configureDialogFocus(view);
         dialog.setContentView(view);
 
         view.findViewById(R.id.btnCloseEditSheet).setOnClickListener(v -> dialog.dismiss());
@@ -997,7 +1147,7 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
 
         RecyclerView rv = view.findViewById(R.id.rvEditCodes);
         rv.setLayoutManager(new LinearLayoutManager(this));
-        EditCodesAdapter adapter = new EditCodesAdapter(channels, draftCodes);
+        EditCodesAdapter adapter = new EditCodesAdapter(channels, draftCodes, resolveTvFocusEnabled());
         rv.setAdapter(adapter);
 
         activeEditCodesCallback = imported -> {
@@ -1077,17 +1227,21 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
     private static class EditCodesAdapter extends RecyclerView.Adapter<EditCodesAdapter.RowVH> {
         private final List<ChannelItem> items;
         private final Map<String, String> draft;
+        private final boolean tvFocusEnabled;
 
-        EditCodesAdapter(List<ChannelItem> items, Map<String, String> draft) {
+        EditCodesAdapter(List<ChannelItem> items, Map<String, String> draft, boolean tvFocusEnabled) {
             this.items = items;
             this.draft = draft;
+            this.tvFocusEnabled = tvFocusEnabled;
         }
 
         @NonNull
         @Override
         public RowVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            return new RowVH(LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_edit_code_row, parent, false));
+            View row = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_edit_code_row, parent, false);
+            if (!tvFocusEnabled) clearFocusRings(row);
+            return new RowVH(row);
         }
 
         @Override
@@ -1134,6 +1288,7 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
     private void openTvModelSheet() {
         BottomSheetDialog dialog = new BottomSheetDialog(this, R.style.Theme_SmartRemote_BottomSheetDialog);
         View view = LayoutInflater.from(this).inflate(R.layout.sheet_tv_model, null);
+        configureDialogFocus(view);
         dialog.setContentView(view);
 
         view.findViewById(R.id.btnCloseTvSheet).setOnClickListener(v -> dialog.dismiss());
@@ -1165,7 +1320,7 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
             irManager.setSelectedModel(activeCategory[0], brand.name);
             syncHeaderState();
             showToast("مدل " + brand.name + " انتخاب شد", true);
-        });
+        }, resolveTvFocusEnabled());
         rvModels.setAdapter(adapter);
 
         Runnable applyFilter = () -> {
@@ -1222,12 +1377,15 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         private final List<IrManager.BrandItem> items;
         private final IrManager irManager;
         private final OnSelect onSelect;
+        private final boolean tvFocusEnabled;
         private String activeCategory = "TV";
 
-        TvModelAdapter(List<IrManager.BrandItem> items, IrManager irManager, OnSelect onSelect) {
+        TvModelAdapter(List<IrManager.BrandItem> items, IrManager irManager, OnSelect onSelect,
+                       boolean tvFocusEnabled) {
             this.items = items;
             this.irManager = irManager;
             this.onSelect = onSelect;
+            this.tvFocusEnabled = tvFocusEnabled;
         }
 
         void setActiveCategory(String cat) {
@@ -1237,8 +1395,10 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         @NonNull
         @Override
         public ModelVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            return new ModelVH(LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_tv_model, parent, false));
+            View row = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_tv_model, parent, false);
+            if (!tvFocusEnabled) clearFocusRings(row);
+            return new ModelVH(row);
         }
 
         @Override
@@ -1282,12 +1442,21 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
     // ==================== PERSISTENCE & HELPERS ====================
 
     private void syncHeaderState() {
-        channelAdapter.setHeaderState(
-                irManager.getSelectedBrand(),
-                getDefaultQualityDisplayName(),
-                isRefreshing,
-                frameProgressText
-        );
+        if (btnRefresh == null) return;
+        btnRefresh.setText(isRefreshing ? "در حال بروزرسانی..." : "به روز رسانی");
+        btnRefresh.setEnabled(!isRefreshing);
+        btnRefresh.setAlpha(isRefreshing ? 0.7f : 1f);
+
+        if (frameProgressText != null) {
+            btnCaptureFrames.setText(frameProgressText);
+        } else {
+            btnCaptureFrames.setText("دریافت فریم اول");
+        }
+
+        btnSelectTvModel.setText("مدل تلویزیون: " + irManager.getSelectedBrand());
+        btnDefaultQuality.setText("کیفیت پیش‌فرض پخش: " + getDefaultQualityDisplayName());
+        syncFrameSourceButtons();
+        syncTvFocusToggle();
     }
 
     private void loadSavedCodes() {

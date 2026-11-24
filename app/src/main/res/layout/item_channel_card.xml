@@ -25,8 +25,9 @@
             android:focusableInTouchMode="true"
             android:background="@drawable/fg_tv_focus">
 
-            <!-- Image Area (h-32 = 128dp) -->
+            <!-- Image Area (16:9, height set in code from width) -->
             <FrameLayout
+                android:id="@+id/thumbContainer"
                 android:layout_width="match_parent"
                 android:layout_height="124dp"
                 android:background="#E5E7EB">
