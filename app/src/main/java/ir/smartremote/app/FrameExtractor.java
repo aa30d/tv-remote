@@ -54,7 +54,7 @@ public class FrameExtractor {
         cancelled.set(true);
     }
 
-    public void extractAll(List<ChannelItem> channels, Listener listener) {
+    public void extractAll(List<ChannelItem> channels, String preferredSource, Listener listener) {
         cancelled.set(false);
         final int total = channels != null ? channels.size() : 0;
         if (total == 0) {
@@ -70,7 +70,7 @@ public class FrameExtractor {
                 if (cancelled.get()) return;
                 boolean ok = false;
                 try {
-                    ok = captureChannelFrame(ch);
+                    ok = captureChannelFrame(ch, preferredSource);
                     if (ok) succeeded.incrementAndGet();
                 } catch (Exception e) {
                     Log.w(TAG, "Frame capture failed for " + ch.uid + ": " + e.getMessage());
@@ -86,10 +86,11 @@ public class FrameExtractor {
         }
     }
 
-    private boolean captureChannelFrame(ChannelItem ch) {
-        // Prefer Telewebion (always has multi-quality adaptive master m3u8 including lowest 240p/360p)
-        // and fall back to Sepehr stream (or vice versa)
-        String[] candidates = new String[]{ch.getTelewebionStreamUrl(), ch.sepehrStreamUrl};
+    private boolean captureChannelFrame(ChannelItem ch, String preferredSource) {
+        // Use exactly the source selected by the user.
+        String[] candidates = "sepehr".equals(preferredSource)
+                ? new String[]{ch.sepehrStreamUrl}
+                : new String[]{ch.getTelewebionStreamUrl()};
         for (String m3u8Url : candidates) {
             if (cancelled.get()) return false;
             if (m3u8Url == null || m3u8Url.trim().isEmpty()) continue;
@@ -121,7 +122,10 @@ public class FrameExtractor {
                 mediaPlaylistUrl = second.finalUrl;
             }
 
-            String segmentUrl = pickFirstSegment(mediaPlaylistText, mediaPlaylistUrl);
+            // Live DVR playlists are ordered oldest-to-newest. The first listed
+            // segment can be about an hour old; capture from the newest complete
+            // segment at the end of the playlist instead.
+            String segmentUrl = pickLatestSegment(mediaPlaylistText, mediaPlaylistUrl);
             if (segmentUrl == null) return false;
 
             tmpSeg = File.createTempFile("seg_" + uid + "_", ".ts", context.getCacheDir());
@@ -204,15 +208,18 @@ public class FrameExtractor {
         return bestUrl;
     }
 
-    private String pickFirstSegment(String playlist, String baseUrl) throws Exception {
-        String[] lines = playlist.split("\r?\n");
+    private String pickLatestSegment(String playlist, String baseUrl) throws Exception {
+        String[] lines = playlist.split("\\r?\\n");
         URL base = new URL(baseUrl);
+        String latestSegmentUrl = null;
         for (String line : lines) {
             String t = line.trim();
             if (t.isEmpty() || t.startsWith("#")) continue;
-            return new URL(base, t).toString();
+            // Media playlist entries are chronological; retain the last complete
+            // segment rather than the oldest entry in a DVR/time-shift window.
+            latestSegmentUrl = new URL(base, t).toString();
         }
-        return null;
+        return latestSegmentUrl;
     }
 
     private PlaylistFetch fetchPlaylist(String url, String referer) {

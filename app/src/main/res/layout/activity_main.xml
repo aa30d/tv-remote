@@ -29,18 +29,189 @@
                 android:background="@color/header_primary"
                 android:gravity="center"
                 android:orientation="vertical"
+                android:paddingHorizontal="12dp"
                 android:paddingVertical="16dp"
                 app:layout_scrollFlags="scroll">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/vazirmatn_bold"
                     android:letterSpacing="0.02"
                     android:text="@string/app_name"
                     android:textColor="@color/white"
                     android:textSize="23sp"
                     android:textStyle="bold" />
+
+                <!-- Row: Refresh + Capture First Frame + Settings toggle -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnRefresh"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_action_button"
+                        android:elevation="2dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingHorizontal="8dp"
+                        android:text="به روز رسانی"
+                        android:textColor="@color/text_dark"
+                        android:textSize="13sp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:foreground="@drawable/fg_tv_focus" />
+
+                    <TextView
+                        android:id="@+id/btnCaptureFrames"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="6dp"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_action_button"
+                        android:elevation="2dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingHorizontal="8dp"
+                        android:text="دریافت فریم اول"
+                        android:textColor="@color/text_dark"
+                        android:textSize="13sp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:foreground="@drawable/fg_tv_focus" />
+
+                    <ImageButton
+                        android:id="@+id/btnHeaderSettings"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="2dp"
+                        android:background="@drawable/bg_dark_pill"
+                        android:contentDescription="تنظیمات"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_settings"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:foreground="@drawable/fg_tv_focus" />
+                </LinearLayout>
+
+                <!-- Collapsible extra options (hidden until Settings is pressed) -->
+                <LinearLayout
+                    android:id="@+id/headerOptionsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/btnEditCodes"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/bg_action_button"
+                        android:elevation="2dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingHorizontal="8dp"
+                        android:text="ویرایش کد کانالها"
+                        android:textColor="@color/text_dark"
+                        android:textSize="13sp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:foreground="@drawable/fg_tv_focus" />
+
+                    <TextView
+                        android:id="@+id/btnSelectTvModel"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/bg_action_button"
+                        android:elevation="2dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingHorizontal="8dp"
+                        android:text="مدل تلویزیون: Samsung"
+                        android:textColor="@color/text_dark"
+                        android:textSize="13sp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:foreground="@drawable/fg_tv_focus" />
+
+                    <TextView
+                        android:id="@+id/btnDefaultQuality"
+                        android:layout_width="match_parent"
+                        android:layout_height="42dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/bg_action_button"
+                        android:elevation="2dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingHorizontal="8dp"
+                        android:text="کیفیت پیش‌فرض پخش: تطبیقی (بر اساس سرعت اینترنت)"
+                        android:textColor="@color/text_dark"
+                        android:textSize="12.5sp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:foreground="@drawable/fg_tv_focus" />
+
+                    <!-- Frame capture source: Telewebion / Sepehr -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnFrameSourceTelewebion"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_sheet_btn_white"
+                            android:gravity="center"
+                            android:text="عکس از تلوبیون"
+                            android:textColor="@color/text_dark"
+                            android:textSize="12sp"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true"
+                            android:foreground="@drawable/fg_tv_focus" />
+
+                        <TextView
+                            android:id="@+id/btnFrameSourceSepehr"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_sheet_btn_white"
+                            android:gravity="center"
+                            android:text="عکس از سپهر"
+                            android:textColor="@color/text_dark"
+                            android:textSize="12sp"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true"
+                            android:foreground="@drawable/fg_tv_focus" />
+                    </LinearLayout>
+
+                    <CheckBox
+                        android:id="@+id/chkTvFocus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="حالت تلویزیون (فوکوس D-Pad)"
+                        android:textColor="@color/white"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Sticky Player (pinned under status bar when scrolled) -->
@@ -130,7 +301,10 @@
                             android:text="تلاش مجدد"
                             android:textColor="@color/white"
                             android:textSize="12sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true"
+                            android:foreground="@drawable/fg_tv_focus" />
                     </LinearLayout>
 
                     <!-- Close Button (Top Right) -->
@@ -143,7 +317,10 @@
                         android:background="@drawable/bg_dark_pill"
                         android:contentDescription="بستن"
                         android:padding="6dp"
-                        android:src="@drawable/ic_close" />
+                        android:src="@drawable/ic_close"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:foreground="@drawable/fg_tv_focus" />
 
                     <!-- Title Overlay (Top Left) -->
                     <LinearLayout
@@ -183,7 +360,10 @@
                         android:contentDescription="پخش یا توقف"
                         android:padding="15dp"
                         android:scaleType="fitCenter"
-                        android:src="@drawable/ic_play" />
+                        android:src="@drawable/ic_play"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:foreground="@drawable/fg_tv_focus" />
 
                     <!-- Bottom Controls Bar -->
                     <LinearLayout
@@ -236,7 +416,10 @@
                                 android:contentDescription="قبلی"
                                 android:padding="7dp"
                                 android:scaleType="fitCenter"
-                                android:src="@drawable/ic_prev" />
+                                android:src="@drawable/ic_prev"
+                                android:focusable="true"
+                                android:focusableInTouchMode="true"
+                                android:foreground="@drawable/fg_tv_focus" />
 
                             <ImageButton
                                 android:id="@+id/btnPlayerPlayPause"
@@ -247,7 +430,10 @@
                                 android:contentDescription="پخش"
                                 android:padding="6dp"
                                 android:scaleType="fitCenter"
-                                android:src="@drawable/ic_pause" />
+                                android:src="@drawable/ic_pause"
+                                android:focusable="true"
+                                android:focusableInTouchMode="true"
+                                android:foreground="@drawable/fg_tv_focus" />
 
                             <ImageButton
                                 android:id="@+id/btnPlayerNext"
@@ -257,7 +443,10 @@
                                 android:contentDescription="بعدی"
                                 android:padding="7dp"
                                 android:scaleType="fitCenter"
-                                android:src="@drawable/ic_next" />
+                                android:src="@drawable/ic_next"
+                                android:focusable="true"
+                                android:focusableInTouchMode="true"
+                                android:foreground="@drawable/fg_tv_focus" />
 
                             <View
                                 android:layout_width="0dp"
@@ -276,7 +465,10 @@
                                 android:text="تطبیقی"
                                 android:textColor="@color/white"
                                 android:textSize="11sp"
-                                android:textStyle="bold" />
+                                android:textStyle="bold"
+                                android:focusable="true"
+                                android:focusableInTouchMode="true"
+                                android:foreground="@drawable/fg_tv_focus" />
 
                             <ImageButton
                                 android:id="@+id/btnPlayerMute"
@@ -287,7 +479,10 @@
                                 android:contentDescription="صدا"
                                 android:padding="7dp"
                                 android:scaleType="fitCenter"
-                                android:src="@drawable/ic_volume_high" />
+                                android:src="@drawable/ic_volume_high"
+                                android:focusable="true"
+                                android:focusableInTouchMode="true"
+                                android:foreground="@drawable/fg_tv_focus" />
 
                             <ImageButton
                                 android:id="@+id/btnPlayerFullscreen"
@@ -297,7 +492,10 @@
                                 android:contentDescription="تمام صفحه"
                                 android:padding="7dp"
                                 android:scaleType="fitCenter"
-                                android:src="@drawable/ic_expand" />
+                                android:src="@drawable/ic_expand"
+                                android:focusable="true"
+                                android:focusableInTouchMode="true"
+                                android:foreground="@drawable/fg_tv_focus" />
                         </LinearLayout>
                     </LinearLayout>
                 </FrameLayout>
@@ -313,7 +511,9 @@
             android:overScrollMode="never"
             android:paddingHorizontal="6dp"
             android:paddingBottom="125dp"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            android:focusable="true"
+            android:focusableInTouchMode="false" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
@@ -353,7 +553,9 @@
                     android:id="@+id/remoteViewPager"
                     android:layout_width="match_parent"
                     android:layout_height="228dp"
-                    android:layoutDirection="ltr" />
+                    android:layoutDirection="ltr"
+                    android:focusable="true"
+                    android:focusableInTouchMode="false" />
 
                 <!-- Subtle 2-Page Indicator Dots -->
                 <LinearLayout
@@ -415,7 +617,10 @@
                     android:contentDescription="منوی ریموت"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/ic_ellipsis" />
+                    android:src="@drawable/ic_ellipsis"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:foreground="@drawable/fg_tv_focus" />
             </FrameLayout>
 
             <!-- Volume Down -->
@@ -434,7 +639,10 @@
                     android:contentDescription="کاهش صدا"
                     android:padding="11dp"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/ic_volume_low" />
+                    android:src="@drawable/ic_volume_low"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:foreground="@drawable/fg_tv_focus" />
             </FrameLayout>
 
             <!-- Volume Up -->
@@ -452,7 +660,10 @@
                     android:contentDescription="افزایش صدا"
                     android:padding="11dp"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/ic_volume_high" />
+                    android:src="@drawable/ic_volume_high"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:foreground="@drawable/fg_tv_focus" />
             </FrameLayout>
 
             <!-- Power + Tiny IR LED Indicator -->
@@ -470,7 +681,10 @@
                     android:contentDescription="پاور"
                     android:padding="11dp"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/ic_power" />
+                    android:src="@drawable/ic_power"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:foreground="@drawable/fg_tv_focus" />
 
                 <View
                     android:id="@+id/irLedDot"

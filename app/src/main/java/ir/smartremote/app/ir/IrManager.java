@@ -7,6 +7,7 @@ import android.hardware.ConsumerIrManager;
 import android.hardware.ConsumerIrManager.CarrierFrequencyRange;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -36,6 +37,9 @@ public class IrManager {
     private static final int LONG_PRESS_REPEAT_DELAY_MS = 250;
     private static final int REPEAT_PERIOD_MS = 200;
     private static final int INTER_DIGIT_GAP_MS = 360;
+    // If another channel is dialed within this window after the previous one,
+    // the previous channel entry/banner is still open, so EXIT is sent first.
+    private static final int DIAL_EXIT_WINDOW_MS = 6000;
 
     // Button IDs matching org.twinone.irremote.components.Button
     public static final int ID_POWER = 1;
@@ -75,6 +79,7 @@ public class IrManager {
         FALLBACKS.put(ID_LIST, new int[]{ID_LIST, ID_GUIDE, ID_MENU});
         FALLBACKS.put(ID_SETTING, new int[]{ID_SETTING, ID_MENU, ID_SMART});
         FALLBACKS.put(ID_BACK, new int[]{ID_BACK, ID_EXIT, ID_CLEAR});
+        FALLBACKS.put(ID_EXIT, new int[]{ID_EXIT, ID_BACK, ID_CLEAR});
         FALLBACKS.put(ID_CH_UP, new int[]{ID_CH_UP, 40, ID_NAV_UP});
         FALLBACKS.put(ID_CH_DOWN, new int[]{ID_CH_DOWN, 41, ID_NAV_DOWN});
     }
@@ -116,6 +121,8 @@ public class IrManager {
     private volatile boolean transmittedOnceInHold = false;
     private volatile Signal activeHoldSignal = null;
     private final AtomicInteger dialGeneration = new AtomicInteger(0);
+    // elapsedRealtime() of the last dialCode() call; 0 = no dial yet.
+    private volatile long lastDialAtMs = 0;
 
     private final Runnable repeatRunnable = new Runnable() {
         @Override
@@ -192,6 +199,7 @@ public class IrManager {
         if (!hasBrand(category, brand)) return;
         selectedCategory = category;
         selectedBrand = brand;
+        lastDialAtMs = 0; // new model: next dial is a fresh session, no EXIT prefix
         prefs.edit()
                 .putString(KEY_CATEGORY, category)
                 .putString(KEY_BRAND, brand)
@@ -359,6 +367,9 @@ public class IrManager {
      * Exact native touch listener modeled after divested-mobile/irremote's TransmitOnTouchListener:
      * - Short tap sends signal once immediately on ACTION_UP
      * - Long hold (>250ms) repeats continuously every 200ms until released
+     * Views using this listener should also set an OnClickListener that calls
+     * {@link #sendButtonOnce(int)}: touch taps then send via performClick(),
+     * and TV D-Pad DPAD_CENTER/ENTER (which triggers performClick()) works too.
      */
     public View.OnTouchListener createButtonTouchListener(final int buttonId, final boolean allowRepeat) {
         return new View.OnTouchListener() {
@@ -372,10 +383,10 @@ public class IrManager {
                     case MotionEvent.ACTION_DOWN:
                         fingerDown = true;
                         v.setPressed(true);
+                        transmittedOnceInHold = false;
                         if (allowRepeat) {
                             final Signal sig = resolveSignal(buttonId);
                             if (sig != null && hasIrEmitter()) {
-                                transmittedOnceInHold = false;
                                 activeHoldSignal = sig;
                                 longPressTrigger = () -> {
                                     if (fingerDown) {
@@ -404,7 +415,9 @@ public class IrManager {
 
                     case MotionEvent.ACTION_UP:
                         if (fingerDown) {
-                            v.performClick();
+                            // Short tap only: after a long-press repeat the signal
+                            // was already sent, so no extra click (and no double send).
+                            if (!transmittedOnceInHold) v.performClick();
                             v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
                             cancelHold(v, true);
                         }
@@ -426,7 +439,10 @@ public class IrManager {
                 }
                 boolean alreadySent = transmittedOnceInHold;
                 stopRepeating();
-                if (transmitIfNotYetSent && !alreadySent) {
+                // Clickable views (with an OnClickListener, e.g. for TV D-Pad
+                // DPAD_CENTER which calls performClick) already sent above via
+                // performClick(); only send here for touch-only views.
+                if (transmitIfNotYetSent && !alreadySent && !v.isClickable()) {
                     sendButtonOnce(buttonId);
                 }
             }
@@ -448,6 +464,12 @@ public class IrManager {
 
     /**
      * Sequentially dials every digit of a channel code with a clean 360ms silent gap AFTER each burst.
+     * Sequence: [EXIT] digits... [OK]
+     * - OK is appended automatically so the TV tunes the channel immediately.
+     * - When channels are dialed back-to-back (within {@link #DIAL_EXIT_WINDOW_MS} of the
+     *   previous dial), EXIT is prepended first to close the previous channel
+     *   entry/banner before the new digits are sent.
+     * EXIT/OK are silently skipped if the selected brand has no such key.
      */
     public boolean dialCode(String rawCode) {
         if (!hasIrEmitter()) {
@@ -455,7 +477,7 @@ public class IrManager {
             return false;
         }
         String digits = normalizeDigits(rawCode);
-        final List<Signal> seq = new ArrayList<>();
+        final List<Signal> digitSeq = new ArrayList<>();
         for (int i = 0; i < digits.length(); i++) {
             char c = digits.charAt(i);
             if (c >= '0' && c <= '9') {
@@ -464,13 +486,24 @@ public class IrManager {
                     notifyError("کلیدهای عددی برای مدل " + selectedBrand + " موجود نیست");
                     return false;
                 }
-                seq.add(s);
+                digitSeq.add(s);
             }
         }
-        if (seq.isEmpty()) {
+        if (digitSeq.isEmpty()) {
             notifyError("کد عددی برای این شبکه ثبت نشده است");
             return false;
         }
+
+        final List<Signal> seq = new ArrayList<>();
+        long now = SystemClock.elapsedRealtime();
+        if (lastDialAtMs != 0 && now - lastDialAtMs < DIAL_EXIT_WINDOW_MS) {
+            Signal exit = resolveSignal(ID_EXIT);
+            if (exit != null) seq.add(exit);
+        }
+        lastDialAtMs = now;
+        seq.addAll(digitSeq);
+        Signal ok = resolveSignal(ID_NAV_OK);
+        if (ok != null) seq.add(ok);
 
         final int gen = dialGeneration.incrementAndGet();
         irHandler.post(() -> {

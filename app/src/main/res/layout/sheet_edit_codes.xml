@@ -20,7 +20,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/vazirmatn_bold"
             android:text="ویرایش کد کانال‌ها"
             android:textColor="@color/text_dark"
             android:textSize="17sp"
@@ -34,7 +33,10 @@
             android:contentDescription="بستن"
             android:padding="6dp"
             android:src="@drawable/ic_close"
-            android:tint="#6B7280" />
+            android:tint="#6B7280"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:foreground="@drawable/fg_tv_focus" />
     </LinearLayout>
 
     <View
@@ -48,7 +50,9 @@
         android:layout_width="match_parent"
         android:layout_height="300dp"
         android:paddingHorizontal="16dp"
-        android:paddingVertical="10dp" />
+        android:paddingVertical="10dp"
+        android:focusable="true"
+        android:focusableInTouchMode="false" />
 
     <View
         android:layout_width="match_parent"
@@ -78,7 +82,10 @@
                 android:background="@drawable/bg_sheet_btn_white"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="10dp">
+                android:paddingHorizontal="10dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:foreground="@drawable/fg_tv_focus">
 
                 <TextView
                     android:layout_width="0dp"
@@ -106,7 +113,10 @@
                 android:background="@drawable/bg_sheet_btn_white"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="10dp">
+                android:paddingHorizontal="10dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:foreground="@drawable/fg_tv_focus">
 
                 <TextView
                     android:layout_width="0dp"
@@ -140,7 +150,10 @@
                 android:background="@drawable/bg_sheet_btn_white"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="10dp">
+                android:paddingHorizontal="10dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:foreground="@drawable/fg_tv_focus">
 
                 <TextView
                     android:layout_width="0dp"
@@ -169,13 +182,15 @@
                 android:elevation="2dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="10dp">
+                android:paddingHorizontal="10dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:foreground="@drawable/fg_tv_focus">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:fontFamily="@font/vazirmatn_bold"
                     android:text="ذخیره تغییرات"
                     android:textColor="@color/white"
                     android:textSize="12sp"

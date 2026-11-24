@@ -10,19 +10,14 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-public class ChannelAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
-    public static final int TYPE_HEADER = 0;
-    public static final int TYPE_CHANNEL = 1;
+public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelVH> {
 
     public interface Listener {
-        void onRefreshClicked();
-        void onCaptureFramesClicked();
-        void onEditCodesClicked();
-        void onSelectTvModelClicked();
-        void onDefaultQualityClicked();
         void onDialChannel(ChannelItem channel);
         void onPlayStream(ChannelItem channel, String source);
     }
@@ -30,15 +25,15 @@ public class ChannelAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final List<ChannelItem> channels = new ArrayList<>();
     private final ImageCacheManager imageCache;
     private final Listener listener;
+    private final boolean tvFocusEnabled;
 
-    private String tvModelLabel = "Samsung";
-    private String defaultQualityLabel = "تطبیقی (بر اساس سرعت اینترنت)";
-    private boolean isRefreshing = false;
-    private String frameProgressText = null;
+    // UIDs whose frame image is still being captured: shown dimmed until updated.
+    private final Set<String> pendingUids = new HashSet<>();
 
-    public ChannelAdapter(ImageCacheManager imageCache, Listener listener) {
+    public ChannelAdapter(ImageCacheManager imageCache, Listener listener, boolean tvFocusEnabled) {
         this.imageCache = imageCache;
         this.listener = listener;
+        this.tvFocusEnabled = tvFocusEnabled;
         setHasStableIds(true);
     }
 
@@ -52,112 +47,93 @@ public class ChannelAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return channels;
     }
 
-    public void setHeaderState(String tvModel, String defaultQuality, boolean refreshing, String frameProgress) {
-        this.tvModelLabel = tvModel;
-        this.defaultQualityLabel = defaultQuality;
-        this.isRefreshing = refreshing;
-        this.frameProgressText = frameProgress;
-        notifyItemChanged(0);
+    /** Marks the given channels as still pending (dimmed) during frame capture. */
+    public void setPendingUids(Collection<String> uids) {
+        pendingUids.clear();
+        if (uids != null) pendingUids.addAll(uids);
+        notifyDataSetChanged();
+    }
+
+    /** Marks one channel as updated: it becomes bright again. */
+    public void markUpdated(String uid) {
+        pendingUids.remove(uid);
+        notifyChannelUpdated(uid);
+    }
+
+    /** Clears all pending marks (capture finished): everything is bright again. */
+    public void clearPending() {
+        if (pendingUids.isEmpty()) return;
+        pendingUids.clear();
+        notifyDataSetChanged();
     }
 
     public void notifyChannelUpdated(String uid) {
         for (int i = 0; i < channels.size(); i++) {
             if (channels.get(i).uid.equals(uid)) {
-                notifyItemChanged(i + 1);
+                notifyItemChanged(i);
                 return;
             }
         }
     }
 
     @Override
-    public int getItemViewType(int position) {
-        return position == 0 ? TYPE_HEADER : TYPE_CHANNEL;
-    }
-
-    @Override
     public long getItemId(int position) {
-        if (position == 0) return -1L;
-        return channels.get(position - 1).uid.hashCode();
+        return channels.get(position).uid.hashCode();
     }
 
     @Override
     public int getItemCount() {
-        return 1 + channels.size();
+        return channels.size();
     }
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ChannelVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inf = LayoutInflater.from(parent.getContext());
-        if (viewType == TYPE_HEADER) {
-            return new HeaderVH(inf.inflate(R.layout.item_top_actions, parent, false));
-        }
-        return new ChannelVH(inf.inflate(R.layout.item_channel_card, parent, false));
+        View item = inf.inflate(R.layout.item_channel_card, parent, false);
+        if (!tvFocusEnabled) MainActivity.clearFocusRings(item);
+        return new ChannelVH(item);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof HeaderVH) {
-            HeaderVH h = (HeaderVH) holder;
-            h.btnRefresh.setText(isRefreshing ? "در حال بروزرسانی..." : "به روز رسانی");
-            h.btnRefresh.setEnabled(!isRefreshing);
-            h.btnRefresh.setAlpha(isRefreshing ? 0.7f : 1f);
-
-            if (frameProgressText != null) {
-                h.btnCaptureFrames.setText(frameProgressText);
-            } else {
-                h.btnCaptureFrames.setText("دریافت عکس اولین فریم");
-            }
-
-            h.btnSelectTvModel.setText("مدل تلویزیون: " + tvModelLabel);
-            h.btnDefaultQuality.setText("کیفیت پیش‌فرض پخش: " + defaultQualityLabel);
-
-            h.btnRefresh.setOnClickListener(v -> listener.onRefreshClicked());
-            h.btnCaptureFrames.setOnClickListener(v -> listener.onCaptureFramesClicked());
-            h.btnEditCodes.setOnClickListener(v -> listener.onEditCodesClicked());
-            h.btnSelectTvModel.setOnClickListener(v -> listener.onSelectTvModelClicked());
-            h.btnDefaultQuality.setOnClickListener(v -> listener.onDefaultQualityClicked());
-            return;
-        }
-
-        ChannelVH c = (ChannelVH) holder;
-        final ChannelItem ch = channels.get(position - 1);
-        c.txtName.setText(ch.name);
-        c.txtProgram.setText(ch.program);
+    public void onBindViewHolder(@NonNull ChannelVH holder, int position) {
+        final ChannelItem ch = channels.get(position);
+        holder.txtName.setText(ch.name);
+        holder.txtProgram.setText(ch.program);
 
         if (ch.code != null && !ch.code.trim().isEmpty()) {
-            c.txtCodeBadge.setText(ch.code);
-            c.txtCodeBadge.setVisibility(View.VISIBLE);
+            holder.txtCodeBadge.setText(ch.code);
+            holder.txtCodeBadge.setVisibility(View.VISIBLE);
         } else {
-            c.txtCodeBadge.setVisibility(View.GONE);
+            holder.txtCodeBadge.setVisibility(View.GONE);
         }
 
-        imageCache.loadChannelThumbnail(ch, c.imgThumb);
+        // Not-yet-updated images are dimmed; updated ones are full brightness.
+        holder.imgThumb.setAlpha(pendingUids.contains(ch.uid) ? 0.35f : 1f);
 
-        c.dialArea.setOnClickListener(v -> listener.onDialChannel(ch));
-        c.btnTelewebion.setOnClickListener(v -> listener.onPlayStream(ch, "telewebion"));
-        c.btnSepehr.setOnClickListener(v -> listener.onPlayStream(ch, "sepehr"));
-    }
+        // Thumbnail box is 16:9: height derived from the card width.
+        holder.thumbContainer.post(() -> {
+            int w = holder.thumbContainer.getWidth();
+            if (w > 0) {
+                ViewGroup.LayoutParams lp = holder.thumbContainer.getLayoutParams();
+                int h = Math.round(w * 9f / 16f);
+                if (lp.height != h) {
+                    lp.height = h;
+                    holder.thumbContainer.setLayoutParams(lp);
+                }
+            }
+        });
 
-    static class HeaderVH extends RecyclerView.ViewHolder {
-        final TextView btnRefresh;
-        final TextView btnCaptureFrames;
-        final TextView btnEditCodes;
-        final TextView btnSelectTvModel;
-        final TextView btnDefaultQuality;
+        imageCache.loadChannelThumbnail(ch, holder.imgThumb);
 
-        HeaderVH(@NonNull View v) {
-            super(v);
-            btnRefresh = v.findViewById(R.id.btnRefresh);
-            btnCaptureFrames = v.findViewById(R.id.btnCaptureFrames);
-            btnEditCodes = v.findViewById(R.id.btnEditCodes);
-            btnSelectTvModel = v.findViewById(R.id.btnSelectTvModel);
-            btnDefaultQuality = v.findViewById(R.id.btnDefaultQuality);
-        }
+        holder.dialArea.setOnClickListener(v -> listener.onDialChannel(ch));
+        holder.btnTelewebion.setOnClickListener(v -> listener.onPlayStream(ch, "telewebion"));
+        holder.btnSepehr.setOnClickListener(v -> listener.onPlayStream(ch, "sepehr"));
     }
 
     static class ChannelVH extends RecyclerView.ViewHolder {
         final View dialArea;
+        final View thumbContainer;
         final ImageView imgThumb;
         final TextView txtCodeBadge;
         final TextView txtName;
@@ -168,6 +144,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         ChannelVH(@NonNull View v) {
             super(v);
             dialArea = v.findViewById(R.id.dialArea);
+            thumbContainer = v.findViewById(R.id.thumbContainer);
             imgThumb = v.findViewById(R.id.imgChannelThumb);
             txtCodeBadge = v.findViewById(R.id.txtCodeBadge);
             txtName = v.findViewById(R.id.txtChannelName);
