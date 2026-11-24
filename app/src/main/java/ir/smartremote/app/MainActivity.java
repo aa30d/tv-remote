@@ -1,11 +1,11 @@
 package ir.smartremote.app;
 
 import android.app.Activity;
-import android.app.UiModeManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -365,10 +365,8 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         } catch (Exception ignored) {
         }
         try {
-            UiModeManager uiMode = (UiModeManager) getSystemService(UI_MODE_SERVICE);
-            if (uiMode != null && uiMode.getCurrentModeType() == UiModeManager.MODE_TYPE_TELEVISION) {
-                return true;
-            }
+            int modeType = getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK;
+            if (modeType == Configuration.UI_MODE_TYPE_TELEVISION) return true;
         } catch (Exception ignored) {
         }
         return false;
