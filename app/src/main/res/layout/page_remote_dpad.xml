@@ -17,7 +17,10 @@
         android:contentDescription="بالا"
         android:padding="13dp"
         android:scaleType="fitCenter"
-        android:src="@drawable/ic_chevron_up" />
+        android:src="@drawable/ic_chevron_up"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:foreground="@drawable/fg_tv_focus_oval" />
 
     <!-- Middle Row: Left, OK, Right -->
     <LinearLayout
@@ -35,7 +38,10 @@
             android:contentDescription="چپ"
             android:padding="13dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_chevron_left" />
+            android:src="@drawable/ic_chevron_left"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:foreground="@drawable/fg_tv_focus_oval" />
 
         <TextView
             android:id="@+id/dpadOk"
@@ -46,7 +52,10 @@
             android:text="OK"
             android:textColor="@color/white"
             android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:foreground="@drawable/fg_tv_focus_oval" />
 
         <ImageButton
             android:id="@+id/dpadRight"
@@ -57,7 +66,10 @@
             android:contentDescription="راست"
             android:padding="13dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_chevron_right" />
+            android:src="@drawable/ic_chevron_right"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:foreground="@drawable/fg_tv_focus_oval" />
     </LinearLayout>
 
     <!-- Down -->
@@ -70,6 +82,9 @@
         android:contentDescription="پایین"
         android:padding="13dp"
         android:scaleType="fitCenter"
-        android:src="@drawable/ic_chevron_down" />
+        android:src="@drawable/ic_chevron_down"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:foreground="@drawable/fg_tv_focus_oval" />
 
 </LinearLayout>

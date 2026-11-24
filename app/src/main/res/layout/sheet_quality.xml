@@ -21,7 +21,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/vazirmatn_bold"
             android:text="انتخاب کیفیت پخش"
             android:textColor="@color/text_dark"
             android:textSize="16sp"
@@ -35,7 +34,10 @@
             android:contentDescription="بستن"
             android:padding="6dp"
             android:src="@drawable/ic_close"
-            android:tint="#6B7280" />
+            android:tint="#6B7280"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:foreground="@drawable/fg_tv_focus" />
     </LinearLayout>
 
     <View

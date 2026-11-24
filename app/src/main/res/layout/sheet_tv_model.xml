@@ -25,7 +25,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/vazirmatn_bold"
                 android:text="انتخاب مدل تلویزیون"
                 android:textColor="@color/text_dark"
                 android:textSize="17sp"
@@ -47,7 +46,10 @@
             android:contentDescription="بستن"
             android:padding="6dp"
             android:src="@drawable/ic_close"
-            android:tint="#6B7280" />
+            android:tint="#6B7280"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:foreground="@drawable/fg_tv_focus" />
     </LinearLayout>
 
     <View
@@ -77,11 +79,13 @@
                 android:layout_marginEnd="4dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_sheet_btn_cyan"
-                android:fontFamily="@font/vazirmatn_bold"
                 android:gravity="center"
                 android:text="تلویزیون (TV)"
                 android:textColor="@color/white"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:foreground="@drawable/fg_tv_focus" />
 
             <TextView
                 android:id="@+id/tabCable"
@@ -90,11 +94,13 @@
                 android:layout_marginStart="4dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_sheet_btn_white"
-                android:fontFamily="@font/vazirmatn_bold"
                 android:gravity="center"
                 android:text="گیرنده / کابل (Cable)"
                 android:textColor="@color/text_dark"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:foreground="@drawable/fg_tv_focus" />
         </LinearLayout>
 
         <EditText
@@ -116,7 +122,9 @@
         android:layout_width="match_parent"
         android:layout_height="260dp"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="4dp" />
+        android:paddingVertical="4dp"
+        android:focusable="true"
+        android:focusableInTouchMode="false" />
 
     <!-- Optional Legacy Pulse Fix checkbox -->
     <CheckBox
@@ -148,11 +156,13 @@
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
             android:background="@drawable/bg_sheet_btn_white"
-            android:fontFamily="@font/vazirmatn_bold"
             android:gravity="center"
             android:text="تست دکمه پاور"
             android:textColor="#DC2626"
-            android:textSize="12.5sp" />
+            android:textSize="12.5sp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:foreground="@drawable/fg_tv_focus" />
 
         <TextView
             android:id="@+id/btnConfirmTvModel"
@@ -161,10 +171,12 @@
             android:layout_marginStart="6dp"
             android:layout_weight="1"
             android:background="@drawable/bg_sheet_btn_cyan"
-            android:fontFamily="@font/vazirmatn_bold"
             android:gravity="center"
             android:text="تایید و بستن"
             android:textColor="@color/white"
-            android:textSize="12.5sp" />
+            android:textSize="12.5sp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:foreground="@drawable/fg_tv_focus" />
     </LinearLayout>
 </LinearLayout>

@@ -78,6 +78,8 @@ public class RemotePagerAdapter extends RecyclerView.Adapter<RemotePagerAdapter.
         View v = root.findViewById(viewId);
         if (v != null) {
             v.setOnTouchListener(irManager.createButtonTouchListener(buttonId, allowRepeat));
+            // TV (D-Pad): DPAD_CENTER/ENTER triggers performClick(), not touch.
+            v.setOnClickListener(click -> irManager.sendButtonOnce(buttonId));
         }
     }
 

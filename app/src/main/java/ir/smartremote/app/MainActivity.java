@@ -11,6 +11,7 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -229,6 +230,14 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         syncHeaderState();
 
         refreshChannelsFromApi(false, true);
+
+        // TV (D-Pad): start with focus inside the channels grid so arrow keys
+        // navigate immediately without any touch. Header buttons are item 0 of
+        // the same RecyclerView, so they are reachable with the arrows too.
+        getWindow().getDecorView().post(() -> {
+            View rv = findViewById(R.id.channelsRecycler);
+            if (rv != null) rv.requestFocus();
+        });
     }
 
     private void bindViews() {
@@ -302,6 +311,10 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         btnVolDown.setOnTouchListener(irManager.createButtonTouchListener(IrManager.ID_VOL_DOWN, true));
         btnVolUp.setOnTouchListener(irManager.createButtonTouchListener(IrManager.ID_VOL_UP, true));
         btnPower.setOnTouchListener(irManager.createButtonTouchListener(IrManager.ID_POWER, false));
+        // TV (D-Pad): DPAD_CENTER/ENTER triggers performClick(), not touch.
+        btnVolDown.setOnClickListener(v -> irManager.sendButtonOnce(IrManager.ID_VOL_DOWN));
+        btnVolUp.setOnClickListener(v -> irManager.sendButtonOnce(IrManager.ID_VOL_UP));
+        btnPower.setOnClickListener(v -> irManager.sendButtonOnce(IrManager.ID_POWER));
 
         // 2-page ViewPager2 for numpad + D-pad
         remoteViewPager.setAdapter(new RemotePagerAdapter(irManager));
@@ -350,6 +363,8 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
                 .setTrackSelector(trackSelector)
                 .build();
         exoPlayerView.setPlayer(exoPlayer);
+        // The video surface itself must not steal D-Pad focus from the controls.
+        exoPlayerView.setFocusable(false);
 
         exoPlayer.addListener(new Player.Listener() {
             @Override
@@ -438,6 +453,8 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         isPlayerOpen = true;
         showPlayerControls(true);
         startPlayback(url);
+        // TV (D-Pad): move focus onto the player controls right away.
+        btnPlayerPlayPause.post(() -> btnPlayerPlayPause.requestFocus());
     }
 
     private void startPlayback(String url) {
@@ -765,6 +782,10 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
                 });
 
         dialog.show();
+        // TV (D-Pad): focus the first quality option.
+        view.post(() -> {
+            if (container.getChildCount() > 0) container.getChildAt(0).requestFocus();
+        });
     }
 
     private void openDefaultQualitySheet() {
@@ -797,6 +818,10 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
                 () -> setDefaultQualityMode(QUALITY_ADAPTIVE, dialog));
 
         dialog.show();
+        // TV (D-Pad): focus the first quality option.
+        view.post(() -> {
+            if (container.getChildCount() > 0) container.getChildAt(0).requestFocus();
+        });
     }
 
     private void setDefaultQualityMode(String mode, BottomSheetDialog dialog) {
@@ -1045,6 +1070,8 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
         });
 
         dialog.show();
+        // TV (D-Pad): focus the codes list so arrows can reach the inputs.
+        rv.post(() -> rv.requestFocus());
     }
 
     private static class EditCodesAdapter extends RecyclerView.Adapter<EditCodesAdapter.RowVH> {
@@ -1183,6 +1210,8 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
 
         applyFilter.run();
         dialog.show();
+        // TV (D-Pad): focus the brand list so arrows can reach the models.
+        rvModels.post(() -> rvModels.requestFocus());
     }
 
     private static class TvModelAdapter extends RecyclerView.Adapter<TvModelAdapter.ModelVH> {
@@ -1308,7 +1337,80 @@ public class MainActivity extends AppCompatActivity implements ChannelAdapter.Li
             toggleRemotePanel();
             return;
         }
+        if (isPlayerOpen) {
+            closePlayer();
+            return;
+        }
         super.onBackPressed();
+    }
+
+    // ==================== TV REMOTE (D-PAD / MEDIA KEYS) ====================
+    // Arrow keys + DPAD_CENTER/ENTER are handled by Android's focus system:
+    // every interactive view is focusable and shows a focus ring, so the
+    // remote just moves focus and clicks the focused view. Only the keys
+    // the focus system does not know (media/channel/menu) are mapped here.
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_GUIDE) {
+            toggleRemotePanel();
+            return true;
+        }
+        if (isPlayerOpen) {
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+                case KeyEvent.KEYCODE_MEDIA_PLAY:
+                case KeyEvent.KEYCODE_MEDIA_PAUSE:
+                    togglePlayPause();
+                    return true;
+                case KeyEvent.KEYCODE_MEDIA_NEXT:
+                case KeyEvent.KEYCODE_CHANNEL_UP:
+                    stepChannel(1);
+                    return true;
+                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                case KeyEvent.KEYCODE_CHANNEL_DOWN:
+                    stepChannel(-1);
+                    return true;
+                case KeyEvent.KEYCODE_DPAD_CENTER:
+                case KeyEvent.KEYCODE_ENTER:
+                case KeyEvent.KEYCODE_NUMPAD_ENTER:
+                    // Focus is on the video area (not a control): reveal the
+                    // controls and put focus on Play/Pause instead of nothing.
+                    if (!isInPlayerArea(getCurrentFocus())) {
+                        showPlayerControls(true);
+                        btnPlayerPlayPause.requestFocus();
+                        return true;
+                    }
+                    break;
+                case KeyEvent.KEYCODE_DPAD_UP:
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                    // Controls hidden and focus not on them: any arrow brings
+                    // the controls back instead of moving focus behind the player.
+                    if (!controlsVisible && !isInPlayerArea(getCurrentFocus())) {
+                        showPlayerControls(true);
+                        btnPlayerPlayPause.requestFocus();
+                        return true;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private boolean isInPlayerArea(View v) {
+        while (v != null) {
+            if (v == playerAspectBox) return true;
+            if (v.getParent() instanceof View) {
+                v = (View) v.getParent();
+            } else {
+                return false;
+            }
+        }
+        return false;
     }
 
     @Override
